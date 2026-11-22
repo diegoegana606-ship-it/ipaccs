@@ -324,7 +324,9 @@
     const low = isLowStock(p);
     const qty = cart[p.id] || 0;
     const inCart = qty > 0;
-    const atMax = stock !== null && qty >= stock;
+    const draft = drafts[p.id] || 0;
+    const shownQty = inCart ? qty : draft;
+    const atMax = stock !== null && shownQty >= stock;
     const badge = sold
       ? `<span class="stock-badge is-out">Agotado</span>`
       : low
@@ -350,18 +352,18 @@
           ${p.desc ? `<p class="product-desc">${esc(p.desc)}</p>` : ""}
           ${badge}
           <div class="product-row">
-            <span class="price-block" data-price-block>${priceBlock(p, qty)}</span>
+            <span class="price-block" data-price-block>${priceBlock(p, shownQty)}</span>
             <div class="card-actions">
               <div class="card-qty" role="group" aria-label="Cantidad de ${esc(p.name)}">
                 <button class="card-qty-btn" type="button" data-card-dec="${esc(p.id)}"
-                  aria-label="Quitar una unidad de ${esc(p.name)}" ${qty <= 0 ? "disabled" : ""}>−</button>
-                <span class="card-qty-num" data-card-count="${esc(p.id)}" aria-live="polite">${qty}</span>
+                  aria-label="Disminuir cantidad de ${esc(p.name)}" ${shownQty <= 0 ? "disabled" : ""}>−</button>
+                <span class="card-qty-num" data-card-count="${esc(p.id)}" aria-live="polite">${shownQty}</span>
                 <button class="card-qty-btn" type="button" data-card-inc="${esc(p.id)}"
-                  aria-label="${sold ? `${esc(p.name)} agotado` : `Agregar una unidad de ${esc(p.name)} al carrito`}"
+                  aria-label="${sold ? `${esc(p.name)} agotado` : `Aumentar cantidad de ${esc(p.name)}`}"
                   ${sold || atMax ? "disabled" : ""}>+</button>
               </div>
               <button class="card-add${inCart ? " is-remove" : ""}" type="button" data-card-add="${esc(p.id)}"
-                aria-label="${inCart ? `Quitar ${esc(p.name)} del carrito` : `Agregar ${esc(p.name)} al carrito`}" ${!inCart && (sold || atMax) ? "disabled" : ""}>${inCart ? "Quitar" : "Agregar"}</button>
+                aria-label="${inCart ? `Quitar ${esc(p.name)} del carrito` : `Agregar ${esc(p.name)} al carrito`}" ${!inCart && sold ? "disabled" : ""}>${inCart ? "Quitar" : "Agregar"}</button>
             </div>
           </div>
         </div>
@@ -374,23 +376,25 @@
       if (!product) return;
       const qty = cart[product.id] || 0;
       const stock = stockOf(product);
+      const inCart = qty > 0;
+      const draft = drafts[product.id] || 0;
+      const shownQty = inCart ? qty : draft;
       const priceEl = $("[data-price-block]", card);
-      if (priceEl) priceEl.innerHTML = priceBlock(product, qty);
+      if (priceEl) priceEl.innerHTML = priceBlock(product, shownQty);
       const countEl = $("[data-card-count]", card);
-      if (countEl) countEl.textContent = qty;
+      if (countEl) countEl.textContent = shownQty;
       const decBtn = $("[data-card-dec]", card);
-      if (decBtn) decBtn.disabled = qty <= 0;
+      if (decBtn) decBtn.disabled = shownQty <= 0;
       const incBtn = $("[data-card-inc]", card);
-      if (incBtn) incBtn.disabled = stock === 0 || (stock !== null && qty >= stock);
+      if (incBtn) incBtn.disabled = stock === 0 || (stock !== null && shownQty >= stock);
       const addBtn = $("[data-card-add]", card);
       if (addBtn) {
-        const inCart = qty > 0;
         addBtn.textContent = inCart ? "Quitar" : "Agregar";
         addBtn.classList.toggle("is-remove", inCart);
         addBtn.setAttribute("aria-label", inCart
           ? `Quitar ${product.name} del carrito`
           : `Agregar ${product.name} al carrito`);
-        addBtn.disabled = !inCart && (stock === 0 || (stock !== null && qty >= stock));
+        addBtn.disabled = !inCart && stock === 0;
       }
     });
   }
@@ -436,16 +440,22 @@
     if (add) {
       const id = add.dataset.cardAdd;
       if (cart[id] > 0) removeFromCard(id);
-      else addToCart(id);
+      else addSelectedToCart(id);
       return;
     }
     const inc = e.target.closest("[data-card-inc]");
     if (inc) {
-      addToCart(inc.dataset.cardInc);
+      const id = inc.dataset.cardInc;
+      if (cart[id] > 0) addToCart(id);
+      else increaseDraft(id);
       return;
     }
     const dec = e.target.closest("[data-card-dec]");
-    if (dec) decrementFromCard(dec.dataset.cardDec);
+    if (dec) {
+      const id = dec.dataset.cardDec;
+      if (cart[id] > 0) decrementFromCard(id);
+      else decreaseDraft(id);
+    }
   });
 
   filtersEl.addEventListener("click", (e) => {
@@ -476,6 +486,7 @@
   try {
     cart = JSON.parse(localStorage.getItem(CART_KEY)) || {};
   } catch (e) { cart = {}; }
+  let drafts = {};
 
   /* ---------- Pago y entrega ---------- */
   const DELIVERY_KEY = "ia_delivery_v1";
@@ -976,15 +987,64 @@
     const product = PRODUCTS.find((p) => p.id === id);
     if (!cart[id]) return;
     delete cart[id];
+    drafts[id] = 0;
     saveCart();
     if (product) toast(`${product.name} eliminado del carrito`);
+  }
+
+  function increaseDraft(id) {
+    const product = PRODUCTS.find((p) => p.id === id);
+    if (!product) return;
+    const stock = stockOf(product);
+    const current = drafts[id] || 0;
+    if (stock === 0) return;
+    if (stock !== null && current >= stock) {
+      toast(`Solo quedan ${stock} unidades de ${product.name}`);
+      return;
+    }
+    drafts[id] = current + 1;
+    syncProductCards();
+  }
+
+  function decreaseDraft(id) {
+    if (!drafts[id]) return;
+    drafts[id] -= 1;
+    syncProductCards();
+  }
+
+  function addSelectedToCart(id) {
+    const product = PRODUCTS.find((p) => p.id === id);
+    if (!product) return;
+    const stock = stockOf(product);
+    if (stock === 0) {
+      toast(`${product.name} está agotado`);
+      return;
+    }
+    const wanted = Math.max(1, drafts[id] || 0);
+    const qty = stock !== null ? Math.min(wanted, stock) : wanted;
+    const beforeTier = tierInfo(product, 0).tier;
+    cart[id] = qty;
+    drafts[id] = 0;
+    const after = tierInfo(product, qty);
+    saveCart();
+    toast(after.tier && after.tier !== beforeTier
+      ? `${qty} × ${product.name} · Mayor ${after.tier}+: ${money(after.unit)} c/u`
+      : `${qty} × ${product.name} agregado al carrito`);
+
+    cartFab.classList.remove("bump");
+    void cartFab.offsetWidth;
+    cartFab.classList.add("bump");
   }
 
   function decrementFromCard(id) {
     const current = cart[id] || 0;
     if (current <= 0) return;
-    if (current === 1) delete cart[id];
-    else cart[id] = current - 1;
+    if (current === 1) {
+      delete cart[id];
+      drafts[id] = 0;
+    } else {
+      cart[id] = current - 1;
+    }
     saveCart();
   }
 
@@ -1007,10 +1067,15 @@
     } else if (dec) {
       const id = dec.dataset.dec;
       cart[id] = (cart[id] || 0) - 1;
-      if (cart[id] <= 0) delete cart[id];
+      if (cart[id] <= 0) {
+        delete cart[id];
+        drafts[id] = 0;
+      }
       saveCart();
     } else if (del) {
-      delete cart[del.dataset.del];
+      const id = del.dataset.del;
+      delete cart[id];
+      drafts[id] = 0;
       saveCart();
     }
   });
@@ -1018,6 +1083,7 @@
   $("#clearCart").addEventListener("click", () => {
     if (entries().length === 0) return;
     cart = {};
+    drafts = {};
     saveCart();
     toast("Carrito vaciado");
   });
