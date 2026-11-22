@@ -1,4 +1,4 @@
-IPHONE'S ACCESORIOS - PAQUETE PARA VERCEL
+ IPHONE'S ACCESORIOS - PAQUETE PARA VERCEL
 =========================================
 
 Este ZIP contiene la tienda, el panel, las funciones /api y el catalogo inicial.
