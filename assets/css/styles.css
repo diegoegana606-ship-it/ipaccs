@@ -660,6 +660,11 @@ html[data-theme="light"] .t-sun  { color: var(--accent-text); }
 }
 .card-add:hover:not(:disabled) { opacity: .85; }
 .card-add:active:not(:disabled) { transform: scale(.97); }
+.card-add.is-remove {
+  background: var(--surface-2);
+  color: var(--text);
+  box-shadow: inset 0 0 0 1px var(--line-strong);
+}
 .card-add:disabled { opacity: .35; cursor: default; }
 
 /* ---------- Beneficios ---------- */
@@ -1241,10 +1246,11 @@ html[data-theme="light"] .t-sun  { color: var(--accent-text); }
 }
 .delivery-tabs {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1fr;
   gap: 8px;
   margin-top: 10px;
 }
+.agency-field { margin-top: 10px; }
 .delivery-tabs[hidden] { display: none; }
 .delivery-tab {
   display: flex;

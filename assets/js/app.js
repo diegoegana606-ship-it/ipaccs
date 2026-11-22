@@ -323,6 +323,7 @@
     const sold = stock === 0;
     const low = isLowStock(p);
     const qty = cart[p.id] || 0;
+    const inCart = qty > 0;
     const atMax = stock !== null && qty >= stock;
     const badge = sold
       ? `<span class="stock-badge is-out">Agotado</span>`
@@ -359,8 +360,8 @@
                   aria-label="${sold ? `${esc(p.name)} agotado` : `Agregar una unidad de ${esc(p.name)} al carrito`}"
                   ${sold || atMax ? "disabled" : ""}>+</button>
               </div>
-              <button class="card-add" type="button" data-card-add="${esc(p.id)}"
-                aria-label="Agregar ${esc(p.name)} al carrito" ${sold || atMax ? "disabled" : ""}>Agregar</button>
+              <button class="card-add${inCart ? " is-remove" : ""}" type="button" data-card-add="${esc(p.id)}"
+                aria-label="${inCart ? `Quitar ${esc(p.name)} del carrito` : `Agregar ${esc(p.name)} al carrito`}" ${!inCart && (sold || atMax) ? "disabled" : ""}>${inCart ? "Quitar" : "Agregar"}</button>
             </div>
           </div>
         </div>
@@ -382,7 +383,15 @@
       const incBtn = $("[data-card-inc]", card);
       if (incBtn) incBtn.disabled = stock === 0 || (stock !== null && qty >= stock);
       const addBtn = $("[data-card-add]", card);
-      if (addBtn) addBtn.disabled = stock === 0 || (stock !== null && qty >= stock);
+      if (addBtn) {
+        const inCart = qty > 0;
+        addBtn.textContent = inCart ? "Quitar" : "Agregar";
+        addBtn.classList.toggle("is-remove", inCart);
+        addBtn.setAttribute("aria-label", inCart
+          ? `Quitar ${product.name} del carrito`
+          : `Agregar ${product.name} al carrito`);
+        addBtn.disabled = !inCart && (stock === 0 || (stock !== null && qty >= stock));
+      }
     });
   }
 
@@ -425,7 +434,9 @@
   grid.addEventListener("click", (e) => {
     const add = e.target.closest("[data-card-add]");
     if (add) {
-      addToCart(add.dataset.cardAdd);
+      const id = add.dataset.cardAdd;
+      if (cart[id] > 0) removeFromCard(id);
+      else addToCart(id);
       return;
     }
     const inc = e.target.closest("[data-card-inc]");
@@ -478,9 +489,9 @@
     { id: "personal", label: "Entrega personal en Valencia, Carabobo", shipping: false },
   ];
   const PAYMENT_METHODS = [
-    { id: "divisas", label: "Divisas" },
+    { id: "divisas", label: "Divisas", personalOnly: true },
     { id: "pago-movil", label: "Pago Móvil" },
-    { id: "transferencia", label: "Transferencia" },
+    { id: "binance", label: "Binance" },
     { id: "efectivo", label: "Efectivo", personalOnly: true },
   ];
 
@@ -499,6 +510,9 @@
   const nameErrorEl = $("#nameError");
   const cedulaErrorEl = $("#cedulaError");
   const phoneErrorEl = $("#phoneError");
+  const agencyField = $("#agencyField");
+  const agencyInput = $("#agencyInput");
+  const agencyErrorEl = $("#agencyError");
   const stateTab = $("#stateTab");
   const muniTab = $("#muniTab");
   const stateValueEl = $("#stateValue");
@@ -530,10 +544,10 @@
       (digits.length === 12 && digits.startsWith("58"));
   };
 
-  const delivery = { state: "", municipality: "", method: "", name: "", cedula: "", phone: "" };
+  const delivery = { state: "", municipality: "", method: "", name: "", cedula: "", phone: "", agency: "" };
   try {
     const saved = JSON.parse(localStorage.getItem(DELIVERY_KEY)) || {};
-    ["state", "municipality", "method", "name", "cedula", "phone"].forEach((key) => {
+    ["state", "municipality", "method", "name", "cedula", "phone", "agency"].forEach((key) => {
       if (typeof saved[key] === "string") delivery[key] = saved[key];
     });
   } catch (e) {}
@@ -547,6 +561,7 @@
   delivery.name = sanitizeName(delivery.name);
   delivery.cedula = formatCedula(delivery.cedula);
   delivery.phone = sanitizePhone(delivery.phone);
+  delivery.agency = String(delivery.agency || "").trim();
 
   let payment = "";
   try { payment = localStorage.getItem(PAYMENT_KEY) || ""; } catch (e) {}
@@ -590,6 +605,8 @@
     payTab.classList.toggle("is-set", !!pay);
 
     locationTabs.hidden = !isShipping() || !hasVenezuela;
+    agencyField.hidden = !isShipping();
+    if (agencyField.hidden) clearError(agencyInput, agencyErrorEl);
   }
 
   function setError(el, errEl, message) {
@@ -616,6 +633,7 @@
     clearError(nameInput, nameErrorEl);
     clearError(cedulaInput, cedulaErrorEl);
     clearError(phoneInput, phoneErrorEl);
+    clearError(agencyInput, agencyErrorEl);
     clearError(stateTab, locationErrorEl);
     clearError(muniTab, locationErrorEl);
   }
@@ -625,6 +643,7 @@
     delivery.name = nameInput.value.replace(/\s+/g, " ").trim();
     delivery.cedula = cedulaInput.value.trim();
     delivery.phone = phoneInput.value.trim();
+    delivery.agency = agencyInput.value.trim();
     saveDelivery();
 
     const issues = [];
@@ -645,9 +664,12 @@
     if (!phone) add(phoneInput, phoneErrorEl, "Escribe tu número de teléfono.");
     else if (!phoneValid(phone)) add(phoneInput, phoneErrorEl, "Teléfono inválido. Ej: 04141234567.");
 
-    if (isShipping() && hasVenezuela) {
-      if (!delivery.state) add(stateTab, locationErrorEl, "Elige tu estado.");
-      else if (!delivery.municipality) add(muniTab, locationErrorEl, "Elige tu municipio.");
+    if (isShipping()) {
+      if (!delivery.agency) add(agencyInput, agencyErrorEl, "Escribe la dirección de agencia.");
+      if (hasVenezuela) {
+        if (!delivery.state) add(stateTab, locationErrorEl, "Elige tu estado.");
+        else if (!delivery.municipality) add(muniTab, locationErrorEl, "Elige tu municipio.");
+      }
     }
 
     issues.forEach((issue) => setError(issue.el, issue.errEl, issue.message));
@@ -681,9 +703,11 @@
   nameInput.value = delivery.name;
   cedulaInput.value = delivery.cedula;
   phoneInput.value = delivery.phone;
+  agencyInput.value = delivery.agency;
   bindField(nameInput, "name", sanitizeName, nameErrorEl);
   bindField(cedulaInput, "cedula", formatCedula, cedulaErrorEl);
   bindField(phoneInput, "phone", sanitizePhone, phoneErrorEl);
+  bindField(agencyInput, "agency", (value) => value, agencyErrorEl);
 
   function openPicker(kind) {
     if ((kind === "state" || kind === "muni") && (!hasVenezuela || (kind === "muni" && !delivery.state))) return;
@@ -773,10 +797,11 @@
       delivery.method = value;
       clearError(methodTab, methodErrorEl);
       const method = DELIVERY_METHODS.find((m) => m.id === value);
-      if (isShipping() && payment === "efectivo") {
+      const payMethod = PAYMENT_METHODS.find((m) => m.id === payment);
+      if (isShipping() && payMethod && payMethod.personalOnly) {
         payment = "";
         savePayment();
-        message = "Efectivo no disponible para envíos";
+        message = `${payMethod.label} no disponible para envíos`;
       } else {
         message = method.label;
       }
@@ -883,6 +908,7 @@
       if (delivery.cedula) message += `\nCédula: ${delivery.cedula}`;
       if (delivery.phone) message += `\nTeléfono: ${delivery.phone}`;
       if (method.shipping) {
+        if (delivery.agency) message += `\nDirección de agencia: ${delivery.agency}`;
         if (delivery.state) message += `\nEstado: ${delivery.state}`;
         if (delivery.municipality) message += `\nMunicipio: ${delivery.municipality}`;
       }
@@ -944,6 +970,14 @@
     cartFab.classList.remove("bump");
     void cartFab.offsetWidth;
     cartFab.classList.add("bump");
+  }
+
+  function removeFromCard(id) {
+    const product = PRODUCTS.find((p) => p.id === id);
+    if (!cart[id]) return;
+    delete cart[id];
+    saveCart();
+    if (product) toast(`${product.name} eliminado del carrito`);
   }
 
   function decrementFromCard(id) {
