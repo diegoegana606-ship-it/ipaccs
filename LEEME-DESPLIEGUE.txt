@@ -1,0 +1,85 @@
+IPHONE'S ACCESORIOS - PAQUETE PARA VERCEL
+=========================================
+
+Este ZIP contiene la tienda, el panel, las funciones /api y el catalogo inicial.
+Las fotos ya estan optimizadas para cargar rapido.
+
+Si ya tienes una tienda publicada con precios, NO sobrescribas data/catalog.json.
+En ese caso sube todo menos ese archivo y conserva el catalogo que ya tienes.
+
+
+1) SUBIR LOS ARCHIVOS A GITHUB
+------------------------------
+1. Crea un repositorio nuevo (puede ser privado) y descomprime este ZIP.
+2. En GitHub entra al repositorio y pulsa: Add file > Upload files.
+3. GitHub permite maximo 100 archivos por carga. Sube en 2 tandas:
+
+   TANDA A (91 archivos):
+   - la carpeta assets completa
+
+   TANDA B (13 archivos):
+   - index.html
+   - admin.html
+   - api (carpeta completa)
+   - data
+   - package.json
+   - vercel.json
+   - .vercelignore
+   - LEEME-DESPLIEGUE.txt
+
+4. Pulsa "Commit changes" al terminar cada tanda.
+
+
+2) CREAR EL TOKEN DE GITHUB
+---------------------------
+1. GitHub > Settings > Developer settings > Personal access tokens > Fine-grained tokens.
+2. Repository access: Only select repositories > elige tu repositorio.
+3. Permissions > Repository permissions > Contents: Read and write.
+4. Genera el token y copialo. No lo compartas con nadie.
+
+
+3) IMPORTAR EN VERCEL
+---------------------
+1. Entra a vercel.com > Add New > Project > Import Git Repository.
+2. Elige el repositorio que acabas de crear.
+3. Framework Preset: Other. No agregues build command.
+4. Pulsa Deploy.
+
+
+4) VARIABLES DE ENTORNO
+-----------------------
+En Vercel > tu proyecto > Settings > Environment Variables, agrega:
+
+- ADMIN_PASSWORD  = la contrasena que tu elijas para el panel
+- ADMIN_KEY       = una clave especial distinta a la contrasena
+- GITHUB_TOKEN    = el token del paso 2
+- GITHUB_REPO     = usuario/repositorio  (ejemplo: xavier/iphones-accesorios)
+- GITHUB_BRANCH   = main  (o el nombre de tu rama)
+- SESSION_SECRET  = una frase larga y aleatoria de 40+ caracteres
+
+Marca Production, Preview y Development. Guarda y pulsa Redeploy.
+
+Los valores los escribes tu directamente en Vercel. No los envies por chat.
+
+
+5) USAR LA TIENDA Y EL PANEL
+----------------------------
+- Tienda:  https://tu-proyecto.vercel.app
+- Panel:   https://tu-proyecto.vercel.app/admin.html
+
+Entra al panel con ADMIN_PASSWORD + ADMIN_KEY.
+Cada vez que guardes, el catalogo se publica en GitHub y la tienda se
+actualiza sola en unos 12 segundos, sin recargar la pagina.
+
+Si ya tenias precios guardados en el panel local:
+1. Abre el panel local y pulsa "Descargar catalogo".
+2. Entra al panel publicado, pulsa "Importar" y selecciona ese archivo.
+3. Guarda una vez para publicar esos precios.
+
+
+NOTAS
+-----
+- El archivo .vercelignore evita subir a Vercel las fotos que subas despues
+  desde el panel; se sirven desde GitHub.
+- Si cambias una variable de entorno, haz Redeploy.
+- No necesitas base de datos adicional.
