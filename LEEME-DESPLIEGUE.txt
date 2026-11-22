@@ -50,8 +50,8 @@ En ese caso sube todo menos ese archivo y conserva el catalogo que ya tienes.
 -----------------------
 En Vercel > tu proyecto > Settings > Environment Variables, agrega:
 
-- ADMIN_PASSWORD  = la contrasena que tu elijas para el panel
-- ADMIN_KEY       = una clave especial distinta a la contrasena
+- ADMIN_PASSWORD  = xavilinares26
+- ADMIN_KEY       = 202611
 - GITHUB_TOKEN    = el token del paso 2
 - GITHUB_REPO     = usuario/repositorio  (ejemplo: xavier/iphones-accesorios)
 - GITHUB_BRANCH   = main  (o el nombre de tu rama)
