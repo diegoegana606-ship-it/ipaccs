@@ -65,7 +65,8 @@
     { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]
   ));
   const icon = (id) => `<svg aria-hidden="true"><use href="#i-${id}"></use></svg>`;
-  const money = (n) => "$" + Number(n).toLocaleString("es-MX");
+  const money = (n) => "$" + Number(n).toLocaleString("es-MX", { maximumFractionDigits: 2 });
+  const roundMoney = (n) => Math.round(Number(n) * 100) / 100;
   const hasPrice = (p) => typeof p.price === "number" && p.price > 0;
   const priceLabel = (p) => hasPrice(p) ? money(p.price) : "Precio por confirmar";
   const wholesaleOf = (p) => (p && typeof p.wholesale === "object" && p.wholesale) || {};
@@ -338,14 +339,14 @@
     const wholesale = {};
     TIERS.forEach((tier) => {
       const value = Number(wholesaleOf(p)[tier]);
-      if (Number.isFinite(value) && value > 0) wholesale[tier] = Math.round(value);
+      if (Number.isFinite(value) && value > 0) wholesale[tier] = roundMoney(value);
     });
     return {
       id: String(p.id || slugify(name)),
       name,
       subtitle: String(p.subtitle || "").trim(),
       category: String(p.category || "Otros").trim() || "Otros",
-      price: typeof p.price === "number" && p.price > 0 ? Math.round(p.price) : null,
+      price: typeof p.price === "number" && p.price > 0 ? roundMoney(p.price) : null,
       stock: stockOf(p),
       wholesale,
       tag: String(p.tag || "").trim(),
@@ -904,7 +905,7 @@
     newCatInput.value = "";
     TIERS.forEach((tier) => {
       const value = Number(wholesaleOf(p)[tier]);
-      tierInputs[tier].value = Number.isFinite(value) && value > 0 ? String(Math.round(value)) : "";
+      tierInputs[tier].value = Number.isFinite(value) && value > 0 ? String(roundMoney(value)) : "";
     });
     formError.textContent = "";
     renderCategorySelect(p.category);
@@ -962,7 +963,7 @@
         priceInput.focus();
         return;
       }
-      price = Math.round(n);
+      price = roundMoney(n);
     }
 
     let stock = null;
@@ -987,7 +988,7 @@
         tierInputs[tier].focus();
         return;
       }
-      wholesale[tier] = Math.round(n);
+      wholesale[tier] = roundMoney(n);
     }
 
     if (state.images.length === 0) {
@@ -1233,7 +1234,7 @@
     const raw = input.value.trim();
     if (raw === "") return null;
     const n = Number(raw);
-    return Number.isFinite(n) && n > 0 ? Math.round(n) : NaN;
+    return Number.isFinite(n) && n > 0 ? roundMoney(n) : NaN;
   }
 
   /* ---------- Pestaña Precios ---------- */
@@ -1255,13 +1256,13 @@
       const wholesale = wholesaleOf(p);
       const tierCells = TIERS.map((tier) => {
         const value = Number(wholesale[tier]);
-        return `<td><input type="number" min="0" step="1" inputmode="numeric"
-          data-field="tier" data-tier="${tier}" value="${Number.isFinite(value) && value > 0 ? Math.round(value) : ""}"
+        return `<td><input type="number" min="0" step="0.01" inputmode="decimal"
+          data-field="tier" data-tier="${tier}" value="${Number.isFinite(value) && value > 0 ? roundMoney(value) : ""}"
           placeholder="—" aria-label="Precio desde ${tier} unidades de ${esc(p.name)}"></td>`;
       }).join("");
       return `<tr data-id="${esc(p.id)}">
         <td>${tableProduct(p)}</td>
-        <td><input type="number" min="0" step="1" inputmode="numeric"
+        <td><input type="number" min="0" step="0.01" inputmode="decimal"
           data-field="price" value="${hasPrice(p) ? p.price : ""}" placeholder="—"
           aria-label="Precio al detal de ${esc(p.name)}"></td>
         ${tierCells}

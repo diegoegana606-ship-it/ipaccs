@@ -247,7 +247,7 @@
 
               <div class="field-row">
                 <label class="field"><span>Precio al detal <span class="opt">(opcional)</span></span>
-                  <input id="priceInput" type="number" min="0" step="1" inputmode="numeric" placeholder="Por confirmar">
+                  <input id="priceInput" type="number" min="0" step="0.01" inputmode="decimal" placeholder="Por confirmar">
                 </label>
                 <label class="field">Stock disponible
                   <input id="stockInput" type="number" min="0" step="1" inputmode="numeric" placeholder="Sin control">
@@ -266,22 +266,22 @@
                 <p class="tier-title">Precios al mayor <span>por unidad</span></p>
                 <div class="tier-grid">
                   <label class="field">Desde 3
-                    <input id="tier3" type="number" min="0" step="1" inputmode="numeric" placeholder="$">
+                    <input id="tier3" type="number" min="0" step="0.01" inputmode="decimal" placeholder="$">
                   </label>
                   <label class="field">Desde 6
-                    <input id="tier6" type="number" min="0" step="1" inputmode="numeric" placeholder="$">
+                    <input id="tier6" type="number" min="0" step="0.01" inputmode="decimal" placeholder="$">
                   </label>
                   <label class="field">Desde 12
-                    <input id="tier12" type="number" min="0" step="1" inputmode="numeric" placeholder="$">
+                    <input id="tier12" type="number" min="0" step="0.01" inputmode="decimal" placeholder="$">
                   </label>
                   <label class="field">Desde 20
-                    <input id="tier20" type="number" min="0" step="1" inputmode="numeric" placeholder="$">
+                    <input id="tier20" type="number" min="0" step="0.01" inputmode="decimal" placeholder="$">
                   </label>
                   <label class="field">Desde 50
-                    <input id="tier50" type="number" min="0" step="1" inputmode="numeric" placeholder="$">
+                    <input id="tier50" type="number" min="0" step="0.01" inputmode="decimal" placeholder="$">
                   </label>
                   <label class="field">Desde 100
-                    <input id="tier100" type="number" min="0" step="1" inputmode="numeric" placeholder="$">
+                    <input id="tier100" type="number" min="0" step="0.01" inputmode="decimal" placeholder="$">
                   </label>
                 </div>
                 <p class="form-note">Escribe el precio por unidad para cada cantidad. Ej.: en 6+ pones 8 y se cobra $8 por unidad desde 6 unidades.</p>
@@ -447,6 +447,6 @@
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
   <script src="assets/js/products.js?v=2"></script>
-  <script src="assets/js/admin.js?v=8"></script>
+  <script src="assets/js/admin.js?v=9"></script>
 </body>
 </html>
